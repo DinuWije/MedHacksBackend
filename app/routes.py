@@ -1,9 +1,13 @@
+import argparse
 from app import app, db, bcrypt
 from app.models import Caregiver, Patient, Journal
 from flask import jsonify, request
 from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 jwt_required, get_jwt_identity, get_raw_jwt,
                                 jwt_optional)
+from google.cloud.language import enums
+from google.cloud.language import types
+from google.cloud import language
 
 
 @app.route("/")
@@ -81,9 +85,8 @@ def patient_login():
 
 
 @app.route("/add_journal", methods=['POST'])
-@jwt_required
 def add_journal():
-    patient_name = get_jwt_identity()
+    patient_name = "JohnDoe"
     patient = Patient.query.filter_by(username=patient_name).first()
 
     req_data = request.get_json()
@@ -91,11 +94,25 @@ def add_journal():
     date = req_data.get('date')
     entry = req_data.get('entry')
 
-    temp_journal_entry = Journal(date=date, entry=entry, patient_id=patient.id)
+    client = language.LanguageServiceClient()
+
+    document = types.Document(
+        content=entry,
+        type=enums.Document.Type.PLAIN_TEXT)
+    annotations = client.analyze_sentiment(document=document)
+
+    score = annotations.document_sentiment.score
+    magnitude = annotations.document_sentiment.magnitude
+
+    # return('Overall Sentiment: score of {} with magnitude of {}'.format(
+    #     score, magnitude))
+
+
+    temp_journal_entry = Journal(date=date, entry=entry, sentiment_scre=score, sentiment_mag=mag, patient_id=patient.id)
     db.session.add(temp_journal_entry)
     db.session.commit()
 
-    return("success")
+    return("{}".format(score))
 
 
 @app.route("/get_patients")
@@ -120,3 +137,4 @@ def get_journals():
     for journal in journals:
         journals_string += journal.entry
     return journals_string
+

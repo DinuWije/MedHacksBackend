@@ -27,7 +27,9 @@ class Journal(db.Model):
 
     id = Column('id', Integer, primary_key=True)
     date = Column('date', String(10), nullable=True, default="N/A")
-    entry = Column('date', String(1500), nullable=True, default="N/A")
+    entry = Column('entry', String(1500), nullable=False)
+    sentiment_score = Column('sentiment_score', String(20), nullable=False)
+    sentiment_mag = Column('sentiment_mag', String(20), nullable=False)
     patient_id = Column(Integer, ForeignKey('patients.id'), nullable=False)
 
 
